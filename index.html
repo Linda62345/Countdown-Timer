@@ -208,10 +208,15 @@
 
                 // 2. 準備剛剛產生的響鈴，同時觸發一次 play/pause 以取得該元素在 iOS 下的互動權限
                 alertAudioElement = new Audio(generateAlertWavUrl());
+                alertAudioElement.muted = true; // 靜音以避免產生短促的怪聲
                 alertAudioElement.play().then(() => {
                     alertAudioElement.pause();
                     alertAudioElement.currentTime = 0;
-                }).catch(e => console.warn(e));
+                    alertAudioElement.muted = false;
+                }).catch(e => {
+                    console.warn(e);
+                    alertAudioElement.muted = false;
+                });
             } else {
                 // 若暫停過後再開始，則確保靜音保持連線重新啟動
                 keepAliveAudio.play().catch(e => console.warn(e));
@@ -247,6 +252,17 @@
             timeLeft = TOTAL_MINUTES * 60;
             updateDisplay();
         }
+
+        // 監聽任意鍵或點擊來停止警報音
+        function stopAlert() {
+            if (alertAudioElement && !alertAudioElement.paused) {
+                alertAudioElement.pause();
+                alertAudioElement.currentTime = 0;
+            }
+        }
+        window.addEventListener('keydown', stopAlert);
+        window.addEventListener('mousedown', stopAlert);
+        window.addEventListener('touchstart', stopAlert);
 
         // 初始化顯示
         updateDisplay();
