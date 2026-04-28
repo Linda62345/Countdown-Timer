@@ -85,6 +85,8 @@
             }
         }
     </style>
+    <!-- 引入 NoSleep.js 來支援 iPad/iOS 保持螢幕喚醒 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nosleep/0.12.0/NoSleep.min.js"></script>
 </head>
 <body>
     <div class="time" id="timeDisplay">14:00</div>
@@ -100,6 +102,9 @@
 
         let timeLeft = TOTAL_MINUTES * 60;
         let timerInterval = null;
+        
+        // 初始化 NoSleep (解決 iPad/iOS 不支援原生 wakeLock 的問題)
+        const noSleep = new NoSleep();
 
         const timeDisplay = document.getElementById('timeDisplay');
 
@@ -163,6 +168,9 @@
         function startTimer() {
             if (timerInterval) return; // 避免重複啟動
             
+            // 啟用螢幕常亮 (必須在使用者點擊事件中呼叫)
+            noSleep.enable();
+
             // 解鎖音訊上下文
             const TempCtx = new (window.AudioContext || window.webkitAudioContext)();
             TempCtx.resume();
@@ -188,6 +196,7 @@
         function pauseTimer() {
             clearInterval(timerInterval);
             timerInterval = null;
+            noSleep.disable(); // 暫停時允許螢幕關閉
         }
 
         function resetTimer() {
