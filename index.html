@@ -17,19 +17,23 @@
             overflow: hidden;
         }
         .time { 
-            font-size: 38vw; 
+            /* 使用 min(vw, vh) 讓文字在任何設備都能完美填滿畫面且不產生捲軸 */
+            font-size: min(28vw, 40vh); 
             font-weight: bold; 
             font-variant-numeric: tabular-nums;
             color: #61afef;
             line-height: 1;
+            text-align: center;
         }
         .controls {
             position: absolute;
-            bottom: 30px;
+            bottom: 5vh;
             opacity: 0.1;
             transition: opacity 0.3s;
             display: flex;
-            gap: 10px;
+            gap: 15px;
+            flex-wrap: wrap; /* 空間不足時自動換行 */
+            justify-content: center;
         }
         .controls:hover {
             opacity: 1;
@@ -43,10 +47,14 @@
             background-color: #98c379; 
             color: #282c34; 
             font-weight: bold;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* 增加按鈕質感 */
         }
         button:hover { 
             background-color: #7cb359; 
+        }
+        button:active {
+            transform: scale(0.95); /* 點擊時內縮效果 */
         }
         .btn-pause {
             background-color: #e5c07b;
@@ -59,6 +67,22 @@
         }
         .btn-reset:hover {
             background-color: #be5046;
+        }
+
+        /* 手機/小螢幕的響應式設定 */
+        @media screen and (max-width: 768px) {
+            .time {
+                font-size: 25vw; /* 讓手機有足夠清楚的字體 */
+            }
+            .controls {
+                opacity: 0.8; /* 手機沒有 hover，預設就顯示一部分的透明度 */
+                bottom: 25px;
+                gap: 10px;
+            }
+            button {
+                padding: 10px 20px; 
+                font-size: 16px; /* 按鈕稍微縮小 */
+            }
         }
     </style>
 </head>
