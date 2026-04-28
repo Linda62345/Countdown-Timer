@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>14分鐘 倒數計時器</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background-color: #000000; 
+            color: #ffffff;
+            margin: 0; 
+            overflow: hidden;
+        }
+        .time { 
+            font-size: 38vw; 
+            font-weight: bold; 
+            font-variant-numeric: tabular-nums;
+            color: #61afef;
+            line-height: 1;
+        }
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            opacity: 0.1;
+            transition: opacity 0.3s;
+            display: flex;
+            gap: 10px;
+        }
+        .controls:hover {
+            opacity: 1;
+        }
+        button { 
+            padding: 12px 25px; 
+            font-size: 20px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 8px; 
+            background-color: #98c379; 
+            color: #282c34; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        button:hover { 
+            background-color: #7cb359; 
+        }
+        .btn-pause {
+            background-color: #e5c07b;
+        }
+        .btn-pause:hover {
+            background-color: #d19a66;
+        }
+        .btn-reset {
+            background-color: #e06c75;
+        }
+        .btn-reset:hover {
+            background-color: #be5046;
+        }
+    </style>
+</head>
+<body>
+    <div class="time" id="timeDisplay">14:00</div>
+    <div class="controls">
+        <button onclick="startTimer()">開始</button>
+        <button class="btn-pause" onclick="pauseTimer()">暫停</button>
+        <button class="btn-reset" onclick="resetTimer()">重設</button>
+    </div>
+
+    <script>
+        const TOTAL_MINUTES = 14; // 總時間設為 14 分鐘
+        const ALERT_MINUTES = 2; // 剩下 2 分鐘時響鈴
+
+        let timeLeft = TOTAL_MINUTES * 60;
+        let timerInterval = null;
+
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = Math.floor(timeLeft % 60);
+            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // 倒數最後兩分鐘時可以改變顏色提醒
+            if (timeLeft <= ALERT_MINUTES * 60 && timeLeft > 0) {
+                timeDisplay.style.color = '#e5c07b';
+            } else if (timeLeft === 0) {
+                timeDisplay.style.color = '#e06c75';
+            } else {
+                timeDisplay.style.color = '#61afef';
+            }
+        }
+
+        // 使用 Web Audio API 產生誇張的警報聲 (高低切換的鋸齒波警報)
+        function playAlert() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 主要振盪器 (使用鋸齒波 'sawtooth' 產生比較刺耳的聲音)
+            const osc = ctx.createOscillator();
+            osc.type = 'sawtooth';
+            
+            // 低頻振盪器 LFO (用來產生上下急促切換的警報感)
+            const lfo = ctx.createOscillator();
+            lfo.type = 'square'; 
+            lfo.frequency.setValueAtTime(6, ctx.currentTime); // 每秒切換 6 次
+            
+            // 頻率變化幅度控制
+            const lfoGain = ctx.createGain();
+            lfoGain.gain.setValueAtTime(400, ctx.currentTime); // 頻率上下浮動 400Hz
+            
+            osc.frequency.setValueAtTime(800, ctx.currentTime); // 基準音高 800Hz
+            
+            // 串接 LFO 到主要振盪器的頻率
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            
+            // 音量控制
+            const gainNode = ctx.createGain();
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.1); // 快速淡入
+            gainNode.gain.setValueAtTime(1, ctx.currentTime + 2.5); // 持續 2.5 秒
+            gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 3); // 0.5 秒淡出
+            
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            // 開始發聲
+            lfo.start(ctx.currentTime);
+            osc.start(ctx.currentTime);
+            
+            // 中止發聲
+            lfo.stop(ctx.currentTime + 3);
+            osc.stop(ctx.currentTime + 3);
+        }
+
+        function startTimer() {
+            if (timerInterval) return; // 避免重複啟動
+            
+            // 解鎖音訊上下文
+            const TempCtx = new (window.AudioContext || window.webkitAudioContext)();
+            TempCtx.resume();
+
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                    
+                    // 經過 12 分鐘 (剩下 2 分鐘) 時響鈴
+                    if (timeLeft === ALERT_MINUTES * 60) {
+                        playAlert();
+                    }
+                } else {
+                    // 14 分鐘結束，再次響鈴並重置循環
+                    playAlert();
+                    resetTimer();
+                    startTimer(); // 自動重新開始下一個 14 分鐘循環
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = TOTAL_MINUTES * 60;
+            updateDisplay();
+        }
+
+        // 初始化顯示
+        updateDisplay();
+    </script>
+</body>
+</html>
